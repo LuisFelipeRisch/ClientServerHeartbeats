@@ -15,7 +15,6 @@
 #include "shared.h"
 #include "config.h"
 
-
 char               hostname[MAX_HOSTNAME_LENGTH];
 int                server_port, socket_desc;
 struct sockaddr_in server_addr, client_addr;
@@ -31,8 +30,8 @@ void listen_to_clients_messages() {
   unsigned int    ttl;
   unsigned long   received_at_ns;
 
-  mhdr.msg_name       = &server_addr;
-  mhdr.msg_namelen    = sizeof(server_addr);
+  mhdr.msg_name       = &client_addr;
+  mhdr.msg_namelen    = sizeof(client_addr);
   mhdr.msg_iov        = iov;
   mhdr.msg_iovlen     = 1;
   mhdr.msg_control    = &control;
@@ -66,8 +65,8 @@ void listen_to_clients_messages() {
     if (VERBOSE)
       fprintf(stdout, 
               "Received message from IP: %s and port: %i at %ld. Client message data: sequence_number: %ld, tss: %ld, ttl: %d, hops: %d\n",
-              inet_ntoa(client_addr.sin_addr), 
-              ntohs(client_addr.sin_port),
+              inet_ntoa(client_addr.sin_addr),
+              ntohs(client_addr.sin_port),    
               received_at_ns,
               client_message->sequence_number, 
               client_message->tss, 
@@ -99,8 +98,8 @@ void setup_server() {
   }
 
   if (VERBOSE) fprintf(stdout, 
-                       "Server socket bound successfully!. Listening on IP: %s and port: %d\n", 
-                       inet_ntoa(server_addr.sin_addr), ntohs(server_addr.sin_port));
+                       "Server socket bound successfully!. Listening on port: %d\n", 
+                       ntohs(server_addr.sin_port));
 
   int yes = 1;
   if (setsockopt(socket_desc, IPPROTO_IP, IP_RECVTTL, &yes, sizeof(yes)) < 0) {

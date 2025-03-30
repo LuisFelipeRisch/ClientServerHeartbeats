@@ -14,9 +14,11 @@
 #include "shared.h"
 #include "config.h"
 
+#define CLIENT_PORT 50000
+
 char               *server_ip_addr;
 int                server_port, socket_desc;
-struct sockaddr_in server_addr;
+struct sockaddr_in server_addr, client_addr;
 socklen_t          server_struct_length;
 unsigned long      sequence_number = 0;
 
@@ -51,7 +53,8 @@ void Heartbeat(){
   
   if (VERBOSE) 
     fprintf(stdout, 
-            "Message sent to IP: %s at port: %d. Message data: message.sequence_number: %ld and message.tss: %ld\n",
+            "Message sent from fixed port %d to IP: %s at port: %d. Message data: sequence_number: %ld and tss: %ld\n",
+            CLIENT_PORT,
             server_ip_addr, 
             server_port, 
             message.sequence_number, 
@@ -80,10 +83,8 @@ void show_program_execution_instructions(char *program_name) {
   fprintf(stderr, "%s <server_ip_address> <server_port>\n", program_name);
 }
 
-int check_arguments_length(int arcg) {
-  if (arcg == 3) return 1;
-
-  return 0;
+int check_arguments_length(int argc) {
+  return argc == 3;
 }
 
 int main(int argc, char *argv[]) {
@@ -97,6 +98,16 @@ int main(int argc, char *argv[]) {
   server_ip_addr       = argv[1];
   server_port          = atoi(argv[2]);
   socket_desc          = create_udp_socket();
+
+  memset(&client_addr, 0, sizeof(client_addr));
+  client_addr.sin_family      = AF_INET;
+  client_addr.sin_addr.s_addr = INADDR_ANY;
+  client_addr.sin_port        = htons(CLIENT_PORT);
+
+  if (bind(socket_desc, (struct sockaddr*) &client_addr, sizeof(client_addr)) < 0) {
+    fprintf(stderr, "Failed to bind client socket!\n");
+    exit(EXIT_FAILURE);
+  }
 
   setup_server_socket_addr(&server_addr, server_ip_addr, server_port);
 

@@ -70,6 +70,15 @@ void listen_to_clients_messages() {
     received_at_ns = received_at.tv_sec * 1E9 + received_at.tv_nsec; 
     client_message = (message_t *) data_buffer;
 
+    if (client_message->sequence_number == MAX_HEARTBEAT_COUNT) {
+      if (VERBOSE) fprintf(stdout, "Client has reached the maximum number of messages (%d) allowed for sending. Closing server...\n", MAX_HEARTBEAT_COUNT);
+
+      close(socket_desc); 
+      fclose(trace_log);
+
+      exit(EXIT_SUCCESS);
+    }
+
     fprintf(trace_log, 
             "%s;%i;%ld;%ld;%ld;%d\n", 
             inet_ntoa(client_addr.sin_addr),

@@ -36,7 +36,7 @@ void listen_to_clients_messages() {
     exit(EXIT_FAILURE);
   }
 
-  fprintf(trace_log, "IP;PORT;SERVER_RECEIVED_AT_NS;CLIENT_SENT_AT_NS;SEQUENCE_NUMBER;HOPS\n");
+  fprintf(trace_log, "CLIENT_IP;CLIENT_PORT;CLIENT_SENT_AT_NS;SERVER_RECEIVED_AT_NS;SEQUENCE_NUMBER;HOPS\n");
 
   mhdr.msg_name       = &client_addr;
   mhdr.msg_namelen    = sizeof(client_addr);
@@ -74,8 +74,8 @@ void listen_to_clients_messages() {
             "%s;%i;%ld;%ld;%ld;%d\n", 
             inet_ntoa(client_addr.sin_addr),
             ntohs(client_addr.sin_port),
+            client_message->tss,
             received_at_ns, 
-            client_message->tss, 
             client_message->sequence_number, 
             DEFAULT_TTL - ttl);
 

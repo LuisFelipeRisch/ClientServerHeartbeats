@@ -37,7 +37,7 @@ void heartbeat(){
   }
 
   message.sequence_number = sequence_number++;
-  message.tss             = st.tv_sec * (long)1E9 + st.tv_nsec;
+  message.sent_at_ns      = st.tv_sec * (long)1E9 + st.tv_nsec;
 
   if (sendto(socket_desc, 
              &message, 
@@ -51,11 +51,11 @@ void heartbeat(){
   
   if (VERBOSE) 
     fprintf(stdout, 
-            "Message sent to IP: %s at port: %d. Message data: message.sequence_number: %ld and message.tss: %ld\n",
+            "Message sent to IP: %s at port: %d. Message data: message.sequence_number: %ld and message.sent_at_ns: %ld\n",
             server_ip_addr, 
             server_port, 
             message.sequence_number, 
-            message.tss);
+            message.sent_at_ns);
 }
 
 void init_heartbeat_interval() {

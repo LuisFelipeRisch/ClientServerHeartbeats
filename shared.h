@@ -5,7 +5,7 @@
 
 typedef struct {
   unsigned long sequence_number; 
-  unsigned long tss;
+  unsigned long sent_at_ns;
 } message_t;
 
 int create_udp_socket();

@@ -74,19 +74,19 @@ void listen_to_clients_messages() {
             "%s;%i;%ld;%ld;%ld;%d\n", 
             inet_ntoa(client_addr.sin_addr),
             ntohs(client_addr.sin_port),
-            client_message->tss,
+            client_message->sent_at_ns,
             received_at_ns, 
             client_message->sequence_number, 
             DEFAULT_TTL - ttl);
 
     if (VERBOSE)
       fprintf(stdout, 
-              "Received message from IP: %s and port: %i at %ld. Client message data: sequence_number: %ld, tss: %ld, ttl: %d, hops: %d\n",
+              "Received message from IP: %s and port: %i at %ld. Client message data: sequence_number: %ld, sent_at_ns: %ld, ttl: %d, hops: %d\n",
               inet_ntoa(client_addr.sin_addr),
               ntohs(client_addr.sin_port),    
               received_at_ns,
               client_message->sequence_number, 
-              client_message->tss, 
+              client_message->sent_at_ns, 
               ttl, 
               DEFAULT_TTL - ttl);
 

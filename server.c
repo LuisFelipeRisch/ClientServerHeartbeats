@@ -15,12 +15,12 @@
 #include "shared.h"
 #include "config.h"
 
-char               hostname[MAX_HOSTNAME_LENGTH];
 int                server_port, socket_desc;
 struct sockaddr_in server_addr, client_addr;
 socklen_t          client_struct_length;
 
 void listen_to_clients_messages() {
+  FILE            *trace_log;
   struct msghdr   mhdr;
   struct iovec    iov[1];
   struct cmsghdr  *cmhdr;
@@ -29,6 +29,14 @@ void listen_to_clients_messages() {
   message_t       *client_message;
   unsigned int    ttl;
   unsigned long   received_at_ns;
+
+  trace_log = fopen("traces/log.txt", "w");
+  if (!trace_log) {
+    fprintf(stderr, "Failed to open trace log!\n"); 
+    exit(EXIT_FAILURE);
+  }
+
+  fprintf(trace_log, "IP;PORT;SERVER_RECEIVED_AT_NS;CLIENT_SENT_AT_NS;SEQUENCE_NUMBER;HOPS\n");
 
   mhdr.msg_name       = &client_addr;
   mhdr.msg_namelen    = sizeof(client_addr);
@@ -61,6 +69,15 @@ void listen_to_clients_messages() {
 
     received_at_ns = received_at.tv_sec * 1E9 + received_at.tv_nsec; 
     client_message = (message_t *) data_buffer;
+
+    fprintf(trace_log, 
+            "%s;%i;%ld;%ld;%ld;%d\n", 
+            inet_ntoa(client_addr.sin_addr),
+            ntohs(client_addr.sin_port),
+            received_at_ns, 
+            client_message->tss, 
+            client_message->sequence_number, 
+            DEFAULT_TTL - ttl);
 
     if (VERBOSE)
       fprintf(stdout, 

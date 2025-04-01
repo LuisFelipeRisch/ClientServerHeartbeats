@@ -22,7 +22,7 @@ struct sockaddr_in server_addr, client_addr;
 socklen_t          server_struct_length;
 unsigned long      sequence_number = 0;
 
-void Heartbeat(){
+void heartbeat(){
   message_t       message;
   struct timespec st;
 
@@ -66,7 +66,7 @@ void init_heartbeat_interval() {
   struct itimerval timer;
 
   memset(&sa, 0, sizeof(sa));
-  sa.sa_handler = Heartbeat;
+  sa.sa_handler = heartbeat;
   sigaction(SIGALRM, &sa, NULL);
 
   timer.it_value.tv_sec     = 0;

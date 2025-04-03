@@ -12,12 +12,50 @@
 #include <time.h>
 #include <signal.h>
 #include <netdb.h>
+#include <math.h>
 #include "shared.h"
 #include "config.h"
 
 int                server_port, socket_desc;
 struct sockaddr_in server_addr, client_addr;
 socklen_t          client_struct_length;
+FILE               **trace_logs;
+unsigned int       trace_logs_quantity;
+
+void setup_trace_logs() {
+  char         filepath[30];
+  unsigned int i;
+
+  trace_logs_quantity = (unsigned int) ceil((double) MAX_HEARTBEAT_COUNT / MAX_LINES_PER_LOG);
+
+  trace_logs = (FILE **) malloc(trace_logs_quantity * sizeof(FILE *));
+  if (!trace_logs) {
+    fprintf(stderr, "Failed to alloc memory!\n");
+    exit(EXIT_FAILURE);
+  }
+
+  for (i = 0; i < trace_logs_quantity; i++) {
+    snprintf(filepath, sizeof(filepath), "traces/log_%i.txt", i);
+
+    trace_logs[i] = fopen(filepath, "w");
+    if (!trace_logs[i]) {
+      fprintf(stderr, "Failed to open file!\n");
+      exit(EXIT_FAILURE);
+    }
+
+    fprintf(trace_logs[i], "CLIENT_IP;CLIENT_PORT;CLIENT_SENT_AT_NS;SERVER_RECEIVED_AT_NS;SEQUENCE_NUMBER;HOPS\n");
+  }
+
+  if (VERBOSE) fprintf(stdout, "Created all %d files of trace logs successfully!\n", i);
+}
+
+void close_trace_logs() {
+  for (unsigned int i = 0; i < trace_logs_quantity; i++) fclose(trace_logs[i]);
+
+  free(trace_logs); 
+
+  if (VERBOSE) fprintf(stdout, "Closed all trace files successfully!\n");
+}
 
 void listen_to_clients_messages() {
   FILE            *trace_log;
@@ -27,16 +65,12 @@ void listen_to_clients_messages() {
   struct timespec received_at;
   char            data_buffer[MAX_DATA_BUFFER_LENGTH], control[MAX_DATA_BUFFER_LENGTH];
   message_t       *client_message;
-  unsigned int    ttl;
+  unsigned int    ttl, client_messages_count, trace_logs_index;
   unsigned long   received_at_ns;
 
-  trace_log = fopen("traces/log.txt", "w");
-  if (!trace_log) {
-    fprintf(stderr, "Failed to open trace log!\n"); 
-    exit(EXIT_FAILURE);
-  }
-
-  fprintf(trace_log, "CLIENT_IP;CLIENT_PORT;CLIENT_SENT_AT_NS;SERVER_RECEIVED_AT_NS;SEQUENCE_NUMBER;HOPS\n");
+  trace_logs_index      = 0;
+  client_messages_count = 0;
+  trace_log             = trace_logs[trace_logs_index];
 
   mhdr.msg_name       = &client_addr;
   mhdr.msg_namelen    = sizeof(client_addr);
@@ -67,6 +101,8 @@ void listen_to_clients_messages() {
       exit(EXIT_FAILURE);
     }
 
+    client_messages_count++;
+    
     received_at_ns = received_at.tv_sec * 1E9 + received_at.tv_nsec; 
     client_message = (message_t *) data_buffer;
 
@@ -74,7 +110,7 @@ void listen_to_clients_messages() {
       if (VERBOSE) fprintf(stdout, "Client has reached the maximum number of messages (%d) allowed for sending. Closing server...\n", MAX_HEARTBEAT_COUNT);
 
       close(socket_desc); 
-      fclose(trace_log);
+      close_trace_logs();
 
       exit(EXIT_SUCCESS);
     }
@@ -98,6 +134,11 @@ void listen_to_clients_messages() {
               client_message->sent_at_ns, 
               ttl, 
               DEFAULT_TTL - ttl);
+
+    if (client_messages_count % MAX_LINES_PER_LOG == 0) {
+      trace_logs_index++; 
+      trace_log = trace_logs[trace_logs_index];
+    }
 
     memset(data_buffer, '\0', sizeof(data_buffer));
   }
@@ -150,6 +191,7 @@ int main(int argc, char *argv[]) {
   client_struct_length = sizeof(client_addr);
   server_port          = atoi(argv[1]);
 
+  setup_trace_logs();
   setup_server();
   listen_to_clients_messages();
 

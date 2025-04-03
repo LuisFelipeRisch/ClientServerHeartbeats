@@ -25,7 +25,7 @@ void heartbeat(){
   struct timespec st;
 
   if (sequence_number == MAX_HEARTBEAT_COUNT + 1) {
-    if (VERBOSE) fprintf(stdout, "Client has reached the maximum number of messages (%d) allowed for sending\n", MAX_HEARTBEAT_COUNT);
+    if (VERBOSE) fprintf(stdout, "Client has reached the maximum number of messages (%ld) allowed for sending\n", MAX_HEARTBEAT_COUNT);
     
     close(socket_desc);
     exit(EXIT_SUCCESS);

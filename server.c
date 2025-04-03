@@ -107,7 +107,7 @@ void listen_to_clients_messages() {
     client_message = (message_t *) data_buffer;
 
     if (client_message->sequence_number == MAX_HEARTBEAT_COUNT) {
-      if (VERBOSE) fprintf(stdout, "Client has reached the maximum number of messages (%d) allowed for sending. Closing server...\n", MAX_HEARTBEAT_COUNT);
+      if (VERBOSE) fprintf(stdout, "Client has reached the maximum number of messages (%ld) allowed for sending. Closing server...\n", MAX_HEARTBEAT_COUNT);
 
       close(socket_desc); 
       close_trace_logs();

@@ -1,7 +1,7 @@
 require 'pry'
 
 RAW_TRACES_DIR_PATH   = "./traces_ufpr_ufsm_week_day/raw"
-JACOBSON_DIR_PATH     = "./traces_ufpr_ufsm_week_day/jacobson"
+JACOBSON_DIR_PATH     = "./traces_ufpr_ufsm_week_day/tuning_phi"
 PHI_MIN               = 1.0
 PHI_MAX               = 4.0
 ALPHA                 = 0.9
@@ -64,12 +64,36 @@ time_period_squared_sum      = 0
         mid_range      = ALPHA * mid_range + (1 - ALPHA) * next_mean
       end
 
-      timeout = server_received_at + (mid_range + (BETA * mean_deviation))
-      values  = [mid_range, mean_deviation, timeout]
+      time_period_mul_interval_sum   += time_period * next_mean
+      time_period_sum                += time_period
+      interval_sum                   += next_mean
+      time_period_squared_sum        += time_period * time_period
+      linear_coefficient             = ((time_period * time_period_mul_interval_sum) - (time_period_sum * interval_sum)).to_f / 
+                                       ((time_period * time_period_squared_sum) - (time_period_sum * time_period_sum)).to_f
+      slope_coefficient              = (interval_sum - (linear_coefficient * time_period_sum)).to_f / 
+                                       time_period.to_f
+      trend                          = linear_coefficient + (slope_coefficient * time_period)
+      calc_phi                       = if mean_deviation.zero? 
+                                        0
+                                       else
+                                        (((trend + mean_deviation) - mid_range) / mean_deviation).abs.ceil
+                                       end
+
+      if greater_than?(calc_phi, PHI_MAX)
+        phi = PHI_MAX
+      end
+
+      if less_than?(calc_phi, PHI_MIN)
+        phi = PHI_MIN
+      end
+
+      timeout = server_received_at + (mid_range + (phi * mean_deviation))
+      values  = [mid_range, mean_deviation, calc_phi, timeout]
       jacobson_file.puts((splitted_line + values).join(CSV_SEPARATOR))
 
       line_number             += 1
       last_server_received_at = server_received_at
+      time_period             += 1
     end
   end
 end

@@ -98,9 +98,8 @@ time_period_squared_sum      = 0
   end
 end
 
-
-
-
+# mostrar os valores calculados de phi na tunnig; 
+# iniciar em 4? 
 
 # require 'pry'
 

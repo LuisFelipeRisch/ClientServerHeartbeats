@@ -1,5 +1,6 @@
 import sys
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 import math
 
 class JacobsonTimeoutCalculator:
@@ -9,6 +10,8 @@ class JacobsonTimeoutCalculator:
   def __init__(self):
     self.estimated_rtt      = -1
     self.deviation_rtt      = -1
+    self.amount_hits        = 0
+    self.amount_misses      = 0
     self.timeouts_over_time = []
   
   def __update_estimated_an_deviation_rtt(self, current_rtt): 
@@ -18,8 +21,23 @@ class JacobsonTimeoutCalculator:
     else:
       self.deviation_rtt = self.ALPHA * self.deviation_rtt + (1 - self.ALPHA) * abs(self.estimated_rtt - current_rtt)
       self.estimated_rtt = self.ALPHA * self.estimated_rtt + (1 - self.ALPHA) * current_rtt
+
+  def __update_statistics(self, current_rtt): 
+    if len(self.timeouts_over_time) == 0: return
+
+    last_timeout = self.timeouts_over_time[-1]
+    if last_timeout > current_rtt or math.isclose(last_timeout, current_rtt): 
+      self.amount_hits += 1
+    else:
+      self.amount_misses += 1
+  
+  def print_statistics(self):
+    print("Jacobson statistics:")
+    print(f"\t--> Amount of Hits: #{self.amount_hits}")
+    print(f"\t--> Amount of Misses: #{self.amount_misses}\n")
     
-  def calculate_timeout(self, current_rtt): 
+  def calculate_timeout(self, current_rtt):
+    self.__update_statistics(current_rtt)
     self.__update_estimated_an_deviation_rtt(current_rtt)
     self.timeouts_over_time.append(self.estimated_rtt + self.PHI * self.deviation_rtt)
       
@@ -35,6 +53,8 @@ class TuningPhiTimeoutCalculator:
     self.time_period_squared_sum = 0.0
     self.estimated_rtt           = -1
     self.deviation_rtt           = -1
+    self.amount_hits             = 0
+    self.amount_misses           = 0
     self.timeouts_over_time      = []
   
   def __update_estimated_an_deviation_rtt(self, current_rtt): 
@@ -45,7 +65,22 @@ class TuningPhiTimeoutCalculator:
       self.deviation_rtt = self.ALPHA * self.deviation_rtt + (1 - self.ALPHA) * abs(self.estimated_rtt - current_rtt)
       self.estimated_rtt = self.ALPHA * self.estimated_rtt + (1 - self.ALPHA) * current_rtt
   
+  def __update_statistics(self, current_rtt): 
+    if len(self.timeouts_over_time) == 0: return
+
+    last_timeout = self.timeouts_over_time[-1]
+    if last_timeout > current_rtt or math.isclose(last_timeout, current_rtt): 
+      self.amount_hits += 1
+    else:
+      self.amount_misses += 1
+  
+  def print_statistics(self):
+    print("Tuning Phi statistics:")
+    print(f"\t--> Amount of Hits: #{self.amount_hits}")
+    print(f"\t--> Amount of Misses: #{self.amount_misses}\n")
+  
   def calculate_timeout(self, current_rtt):
+    self.__update_statistics(current_rtt)
     self.__update_estimated_an_deviation_rtt(current_rtt)
 
     self.time_period             += 1.0
@@ -81,9 +116,27 @@ class TuningPhiV2TimeoutCalculator:
     self.time_period_sum         = 0.0
     self.rtt_sum                 = 0.0 
     self.time_period_squared_sum = 0.0
+    self.amount_hits             = 0
+    self.amount_misses           = 0
     self.timeouts_over_time      = []
   
+  def __update_statistics(self, current_rtt): 
+    if len(self.timeouts_over_time) == 0: return
+
+    last_timeout = self.timeouts_over_time[-1]
+    if last_timeout > current_rtt or math.isclose(last_timeout, current_rtt): 
+      self.amount_hits += 1
+    else:
+      self.amount_misses += 1
+  
+  def print_statistics(self):
+    print("Tuning Phi V2 statistics:")
+    print(f"\t--> Amount of Hits: #{self.amount_hits}")
+    print(f"\t--> Amount of Misses: #{self.amount_misses}\n")
+  
   def calculate_timeout(self, current_rtt):
+    self.__update_statistics(current_rtt)
+
     self.time_period             += 1.0
     self.time_period_mul_rtt_sum += self.time_period * current_rtt
     self.time_period_sum         += self.time_period
@@ -122,14 +175,21 @@ with open("./data.txt") as file:
       print(f"Erro: linha {i} não contém um número válido: {line.strip()}")
       sys.exit(1)
 
+jac_timeout_calculator.print_statistics()
+tun_phi_timeout_calculator.print_statistics()
+tun_phi_v2_timeout_calculator.print_statistics()
+
 plt.plot(times, rtts, marker='o', linestyle='--', color='b', label='Actual Rtt')
-plt.plot(times, jac_timeout_calculator.timeouts_over_time, marker='s', linestyle='-', color='g', label='Timeout by Jac')
-plt.plot(times, tun_phi_timeout_calculator.timeouts_over_time, marker='^', linestyle=':', color='r', label='Timeout By Tun Phi')
-plt.plot(times, tun_phi_v2_timeout_calculator.timeouts_over_time, marker='d', linestyle='-.', color='m', label='Timeout By Tun Phi V2')
+plt.plot([t + 1 for t in times], jac_timeout_calculator.timeouts_over_time, marker='s', linestyle='-', color='g', label='Timeout by Jac')
+plt.plot([t + 1 for t in times], tun_phi_timeout_calculator.timeouts_over_time, marker='^', linestyle=':', color='r', label='Timeout By Tun Phi')
+plt.plot([t + 1 for t in times], tun_phi_v2_timeout_calculator.timeouts_over_time, marker='d', linestyle='-.', color='m', label='Timeout By Tun Phi V2')
 
 plt.title("Jacobson X Tuning PHI X Tuning PHI V2")
 plt.xlabel("Time")
 plt.ylabel("Rtt")
+
+ax = plt.gca() 
+ax.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
 
 plt.grid(True)
 plt.legend()

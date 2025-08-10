@@ -77,13 +77,13 @@ with open(filepath, "r") as file:
       time_period_squared_sum += time_period * time_period
       
       divisor = ((time_period * time_period_squared_sum) - (time_period_sum * time_period_sum))
-      linear_coefficient = -1
+      slope_coefficient = -1
       if math.isclose(divisor, 0.0): 
-        linear_coefficient = 0.0
+        slope_coefficient = 0.0
       else:
-        linear_coefficient = ((time_period * time_period_mul_rtt_sum) - (time_period_sum * rtt_sum)) / float(divisor)
+        slope_coefficient = ((time_period * time_period_mul_rtt_sum) - (time_period_sum * rtt_sum)) / float(divisor)
 
-      slope_coefficient = (rtt_sum - (linear_coefficient * time_period_sum)) / float(time_period)
+      linear_coefficient = (rtt_sum - (slope_coefficient * time_period_sum)) / float(time_period)
       trend = linear_coefficient + (slope_coefficient * time_period)
       
       calculated_phi = -1
@@ -101,16 +101,37 @@ with open(filepath, "r") as file:
 
 timeout = calculate_timeout(estimated_rtt, deviation_rtt, calculated_phi)
 
-print_estimated_deviation_timeout(estimated_rtt, deviation_rtt, timeout)
-
 while 1:
   current_rtt = float(input("Informe um novo valor de RTT. Digite -1 caso queira encerrar o programa: "))
   if current_rtt == -1: break
   
   estimated_rtt, deviation_rtt = update_estimated_an_deviation_rtt(estimated_rtt, deviation_rtt, current_rtt)
-  timeout = calculate_timeout(estimated_rtt, deviation_rtt, phi)
+
+  time_period += 1.0
+  time_period_mul_rtt_sum += time_period * current_rtt
+  time_period_sum += time_period
+  rtt_sum += current_rtt
+  time_period_squared_sum += time_period * time_period
   
-  print_estimated_deviation_timeout(estimated_rtt, deviation_rtt, timeout)
+  divisor = ((time_period * time_period_squared_sum) - (time_period_sum * time_period_sum))
+  slope_coefficient = -1
+  if math.isclose(divisor, 0.0): 
+    slope_coefficient = 0.0
+  else:
+    slope_coefficient = ((time_period * time_period_mul_rtt_sum) - (time_period_sum * rtt_sum)) / float(divisor)
+
+  linear_coefficient = (rtt_sum - (slope_coefficient * time_period_sum)) / float(time_period)
+  trend = linear_coefficient + (slope_coefficient * time_period)
+  
+  calculated_phi = -1
+  if math.isclose(deviation_rtt, 0.0):
+    calculated_phi = start_phi
+  else:
+    calculated_phi = math.ceil(abs(((trend + deviation_rtt) - estimated_rtt) / float(deviation_rtt)))
+  
+  timeout = calculate_timeout(estimated_rtt, deviation_rtt, calculated_phi)
+
+  print_values(current_rtt, estimated_rtt, deviation_rtt, time_period, time_period_mul_rtt_sum, time_period_sum, rtt_sum, time_period_squared_sum, linear_coefficient, slope_coefficient, trend, calculated_phi, timeout)
 
 
 

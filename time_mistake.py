@@ -2,7 +2,7 @@ import math
 from datetime import datetime
 from zoneinfo import ZoneInfo
 import random
-
+import csv
 
 SERVER_RECEIVED_AT_INDEX = 3
 SEQUENCE_NUMBER_INDEX    = 4
@@ -265,7 +265,7 @@ tun_phi_calculator     = TuningPhiTimeoutCalculator()
 estimated_calculator   = EstimatedTimeoutCalculator()
 
 for i in range(0, 18): 
-  with open(f"./traces_ufpr_ufsm_week_day/raw/log_{i}.txt") as file:
+  with open(f"./traces_ufpr_ufsm_weekend/raw/log_{i}.txt") as file:
     for x, line in enumerate(file, start=1):
       if x == 1: 
         continue
@@ -279,6 +279,46 @@ for i in range(0, 18):
       tun_phi_calculator.calculate_timeout_at(server_received_at, sequence_number_received)
       estimated_calculator.calculate_timeout_at(server_received_at, sequence_number_received)
 
-print(jac_timeout_calculator.time_mistakes)
-print(tun_phi_calculator.time_mistakes)
-print(estimated_calculator.time_mistakes)
+csv_filename    = 'csvs/weekend/time_mistake/jac.csv'
+column_headers = ['sequence_number', 'time_taken_to_correct_ns']
+
+try:
+    with open(csv_filename, 'w', newline='', encoding='utf-8') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=column_headers)
+        writer.writeheader()
+        for row in jac_timeout_calculator.time_mistakes:
+            writer.writerow(row)
+except IOError:
+    print(f"I/O Error: Could not write to file '{csv_filename}'.")
+except Exception as e:
+    print(f"An unexpected error occurred: {e}")
+
+csv_filename    = 'csvs/weekend/time_mistake/tun_phi.csv'
+column_headers = ['sequence_number', 'time_taken_to_correct_ns']
+
+try:
+    with open(csv_filename, 'w', newline='', encoding='utf-8') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=column_headers)
+        writer.writeheader()
+        for row in tun_phi_calculator.time_mistakes:
+            writer.writerow(row)
+except IOError:
+    print(f"I/O Error: Could not write to file '{csv_filename}'.")
+except Exception as e:
+    print(f"An unexpected error occurred: {e}")
+
+
+csv_filename    = 'csvs/weekend/time_mistake/estimated.csv'
+column_headers = ['sequence_number', 'time_taken_to_correct_ns']
+
+try:
+    with open(csv_filename, 'w', newline='', encoding='utf-8') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=column_headers)
+        writer.writeheader()
+        for row in estimated_calculator.time_mistakes:
+            writer.writerow(row)
+except IOError:
+    print(f"I/O Error: Could not write to file '{csv_filename}'.")
+except Exception as e:
+    print(f"An unexpected error occurred: {e}")
+

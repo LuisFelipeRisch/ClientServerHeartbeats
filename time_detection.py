@@ -3,10 +3,40 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 import random
 import csv
+import sys
 
 SERVER_RECEIVED_AT_INDEX = 3
 SEQUENCE_NUMBER_INDEX    = 4
-BREAK_ON_SEQUENCE_NB     = 90
+
+if len(sys.argv) < 2:
+  raise ValueError("Nenhum valor para BREAK_ON_SEQUENCE_NB foi fornecido. Por favor, passe um número como argumento de linha de comando.")
+
+try:
+  BREAK_ON_SEQUENCE_NB = int(sys.argv[1])
+  print(f"Using BREAK_ON_SEQUENCE_NB from command line: {BREAK_ON_SEQUENCE_NB}")
+except ValueError:
+  raise ValueError(f"O argumento fornecido '{sys.argv[1]}' não é um número válido. Por favor, passe um número inteiro.")
+
+def add_row_to_csv(file_path, sequence_number, time_to_detect_ns):
+  headers = ['sequence_number', 'time_to_detect_ns']
+  new_row = {
+    'sequence_number': sequence_number,
+    'time_to_detect_ns': time_to_detect_ns
+  }
+
+  try:
+    with open(file_path, 'a', newline='') as csvfile:
+      writer = csv.DictWriter(csvfile, fieldnames=headers)
+    
+      writer.writerow(new_row)
+      print(f"Successfully added row to '{file_path}': {new_row}")
+
+  except FileNotFoundError:
+    print(f"Error: The directory for file '{file_path}' was not found.")
+  except IOError as e:
+    print(f"I/O Error: Could not write to file '{file_path}'. Details: {e}")
+  except Exception as e:
+    print(f"An unexpected error occurred: {e}")
 
 class JacobsonTimeoutCalculator:
   ALPHA = 0.9
@@ -300,9 +330,10 @@ for i in range(0, 18):
         should_stop = True
         break
 
-print(jac_timeout_calculator.time_detection)
-print(tun_phi_calculator.time_detection)
-print(estimated_calculator.time_detection)
+add_row_to_csv('csvs/weekend/time_detection/jac.csv', sequence_number_received, jac_timeout_calculator.time_detection)
+add_row_to_csv('csvs/weekend/time_detection/tun_phi.csv', sequence_number_received, tun_phi_calculator.time_detection)
+add_row_to_csv('csvs/weekend/time_detection/estimated.csv', sequence_number_received, estimated_calculator.time_detection)
+
 
 # csv_filename    = 'csvs/weekend/time_mistake/jac.csv'
 # column_headers = ['sequence_number', 'time_taken_to_correct_ns']

@@ -171,7 +171,7 @@ class TuningPhiTimeoutCalculator:
     else:
       calculated_phi = math.ceil(abs(((trend + self.deviation_rtt) - self.estimated_rtt) / float(self.deviation_rtt)))
 
-    timeout_at = server_received_at + (self.estimated_rtt + calculated_phi * self.deviation_rtt)
+    timeout_at = server_received_at + (self.estimated_rtt + (4 * calculated_phi) * self.deviation_rtt)
 
     self.calculated_timeouts_at.append(timeout_at)
 
@@ -270,7 +270,7 @@ tun_phi_calculator     = TuningPhiTimeoutCalculator()
 estimated_calculator   = EstimatedTimeoutCalculator()
 
 for i in range(0, 18): 
-  with open(f"./traces_ufpr_ufsm_weekend/raw/log_{i}.txt") as file:
+  with open(f"./traces_ufpr_ufsm_week_day/raw/log_{i}.txt") as file:
     for x, line in enumerate(file, start=1):
       if x == 1: 
         continue
@@ -287,7 +287,7 @@ for i in range(0, 18):
       tun_phi_calculator.calculate_timeout_at(server_received_at, sequence_number_received)
       estimated_calculator.calculate_timeout_at(server_received_at, sequence_number_received)
 
-csv_filename    = 'csvs/weekend/time_mistake/tun_phi_normal/jac.csv'
+csv_filename    = 'csvs/week_day/time_mistake/tun_phi_4/jac.csv'
 column_headers = ['sequence_number', 'time_taken_to_correct_ns']
 
 try:
@@ -301,7 +301,7 @@ except IOError:
 except Exception as e:
     print(f"An unexpected error occurred: {e}")
 
-csv_filename    = 'csvs/weekend/time_mistake/tun_phi_normal/tun_phi.csv'
+csv_filename    = 'csvs/week_day/time_mistake/tun_phi_4/tun_phi.csv'
 column_headers = ['sequence_number', 'time_taken_to_correct_ns']
 
 try:
@@ -316,7 +316,7 @@ except Exception as e:
     print(f"An unexpected error occurred: {e}")
 
 
-csv_filename    = 'csvs/weekend/time_mistake/tun_phi_normal/estimated.csv'
+csv_filename    = 'csvs/week_day/time_mistake/tun_phi_4/estimated.csv'
 column_headers = ['sequence_number', 'time_taken_to_correct_ns']
 
 try:

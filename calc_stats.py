@@ -29,6 +29,6 @@ if __name__ == "__main__":
       print("Usage: python script_name.py <path_to_csv_file>")
       sys.exit(1)
 
-    target_column = 'time_to_detect_ns'
+    target_column = 'time_taken_to_correct_ns'
     
     calculate_stats_from_csv(csv_file_path, target_column)

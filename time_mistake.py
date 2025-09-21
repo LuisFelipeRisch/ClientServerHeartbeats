@@ -6,6 +6,11 @@ import csv
 
 SERVER_RECEIVED_AT_INDEX = 3
 SEQUENCE_NUMBER_INDEX    = 4
+NS_TO_INCREASE           = 2000000000 
+
+def chance(perc):
+  sorteio = random.uniform(0, 100)
+  return sorteio < perc
 
 class JacobsonTimeoutCalculator:
   ALPHA = 0.9
@@ -274,6 +279,9 @@ for i in range(0, 18):
       
       server_received_at       = float(splitted_line[SERVER_RECEIVED_AT_INDEX])
       sequence_number_received = int(splitted_line[SEQUENCE_NUMBER_INDEX])
+
+      if chance(0.01): 
+        server_received_at += NS_TO_INCREASE
 
       jac_timeout_calculator.calculate_timeout_at(server_received_at, sequence_number_received)
       tun_phi_calculator.calculate_timeout_at(server_received_at, sequence_number_received)

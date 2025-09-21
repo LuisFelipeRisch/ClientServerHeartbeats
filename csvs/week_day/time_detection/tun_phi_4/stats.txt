@@ -1,0 +1,14 @@
+---- Estimated ----
+
+Mean: 100223726.93
+Standard Deviation: 138548.73
+
+---- Jac ----
+
+Mean: 101705233.07
+Standard Deviation: 3923265.34
+
+---- Tun Phi ----
+
+Mean: 103802060.80
+Standard Deviation: 7808553.76

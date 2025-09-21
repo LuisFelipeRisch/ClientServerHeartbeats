@@ -312,7 +312,7 @@ should_stop = False
 for i in range(0, 18): 
   if should_stop: break
 
-  with open(f"./traces_ufpr_ufsm_week_day/raw/log_{i}.txt") as file:
+  with open(f"./traces_ufpr_ufsm_weekend/raw/log_{i}.txt") as file:
     for x, line in enumerate(file, start=1):
       if x == 1: 
         continue
@@ -330,6 +330,6 @@ for i in range(0, 18):
         should_stop = True
         break
 
-add_row_to_csv('csvs/week_day/time_detection/tun_phi_4/jac.csv', sequence_number_received, jac_timeout_calculator.time_detection)
-add_row_to_csv('csvs/week_day/time_detection/tun_phi_4/tun_phi.csv', sequence_number_received, tun_phi_calculator.time_detection)
-add_row_to_csv('csvs/week_day/time_detection/tun_phi_4/estimated.csv', sequence_number_received, estimated_calculator.time_detection)
+add_row_to_csv('csvs/weekend/time_detection/tun_phi_4/jac.csv', sequence_number_received, jac_timeout_calculator.time_detection)
+add_row_to_csv('csvs/weekend/time_detection/tun_phi_4/tun_phi.csv', sequence_number_received, tun_phi_calculator.time_detection)
+add_row_to_csv('csvs/weekend/time_detection/tun_phi_4/estimated.csv', sequence_number_received, estimated_calculator.time_detection)

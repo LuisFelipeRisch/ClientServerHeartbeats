@@ -202,7 +202,7 @@ class TuningPhiTimeoutCalculator:
     else:
       calculated_phi = math.ceil(abs(((trend + self.deviation_rtt) - self.estimated_rtt) / float(self.deviation_rtt)))
 
-    timeout_at = server_received_at + (self.estimated_rtt + calculated_phi * self.deviation_rtt)
+    timeout_at = server_received_at + (self.estimated_rtt + (4 * calculated_phi) * self.deviation_rtt)
 
     self.calculated_timeouts_at.append(timeout_at)
 
@@ -312,7 +312,7 @@ should_stop = False
 for i in range(0, 18): 
   if should_stop: break
 
-  with open(f"./traces_ufpr_ufsm_weekend/raw/log_{i}.txt") as file:
+  with open(f"./traces_ufpr_ufsm_week_day/raw/log_{i}.txt") as file:
     for x, line in enumerate(file, start=1):
       if x == 1: 
         continue
@@ -330,51 +330,6 @@ for i in range(0, 18):
         should_stop = True
         break
 
-add_row_to_csv('csvs/weekend/time_detection/jac.csv', sequence_number_received, jac_timeout_calculator.time_detection)
-add_row_to_csv('csvs/weekend/time_detection/tun_phi.csv', sequence_number_received, tun_phi_calculator.time_detection)
-add_row_to_csv('csvs/weekend/time_detection/estimated.csv', sequence_number_received, estimated_calculator.time_detection)
-
-
-# csv_filename    = 'csvs/weekend/time_mistake/jac.csv'
-# column_headers = ['sequence_number', 'time_taken_to_correct_ns']
-
-# try:
-#     with open(csv_filename, 'w', newline='', encoding='utf-8') as csvfile:
-#         writer = csv.DictWriter(csvfile, fieldnames=column_headers)
-#         writer.writeheader()
-#         for row in jac_timeout_calculator.time_mistakes:
-#             writer.writerow(row)
-# except IOError:
-#     print(f"I/O Error: Could not write to file '{csv_filename}'.")
-# except Exception as e:
-#     print(f"An unexpected error occurred: {e}")
-
-# csv_filename    = 'csvs/weekend/time_mistake/tun_phi.csv'
-# column_headers = ['sequence_number', 'time_taken_to_correct_ns']
-
-# try:
-#     with open(csv_filename, 'w', newline='', encoding='utf-8') as csvfile:
-#         writer = csv.DictWriter(csvfile, fieldnames=column_headers)
-#         writer.writeheader()
-#         for row in tun_phi_calculator.time_mistakes:
-#             writer.writerow(row)
-# except IOError:
-#     print(f"I/O Error: Could not write to file '{csv_filename}'.")
-# except Exception as e:
-#     print(f"An unexpected error occurred: {e}")
-
-
-# csv_filename    = 'csvs/weekend/time_mistake/estimated.csv'
-# column_headers = ['sequence_number', 'time_taken_to_correct_ns']
-
-# try:
-#     with open(csv_filename, 'w', newline='', encoding='utf-8') as csvfile:
-#         writer = csv.DictWriter(csvfile, fieldnames=column_headers)
-#         writer.writeheader()
-#         for row in estimated_calculator.time_mistakes:
-#             writer.writerow(row)
-# except IOError:
-#     print(f"I/O Error: Could not write to file '{csv_filename}'.")
-# except Exception as e:
-#     print(f"An unexpected error occurred: {e}")
-
+add_row_to_csv('csvs/week_day/time_detection/tun_phi_4/jac.csv', sequence_number_received, jac_timeout_calculator.time_detection)
+add_row_to_csv('csvs/week_day/time_detection/tun_phi_4/tun_phi.csv', sequence_number_received, tun_phi_calculator.time_detection)
+add_row_to_csv('csvs/week_day/time_detection/tun_phi_4/estimated.csv', sequence_number_received, estimated_calculator.time_detection)

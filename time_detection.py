@@ -39,10 +39,10 @@ except ValueError:
   raise ValueError(f"O argumento fornecido '{sys.argv[1]}' não é um número válido. Por favor, passe um número inteiro.")
 
 def add_row_to_csv(file_path, sequence_number, time_to_detect_ns):
-  headers = ['sequence_number', 'time_to_detect_ns']
+  headers = ['sequence_number', 'time_to_detect_s']
   new_row = {
     'sequence_number': sequence_number,
-    'time_to_detect_ns': time_to_detect_ns
+    'time_to_detect_s': time_to_detect_ns / 1_000_000_000
   }
 
   try:

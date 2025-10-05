@@ -40,7 +40,7 @@ class JacobsonTimeoutCalculator:
     self.amount_misses += 1
     time_mistake_dict  = {
       "sequence_number": sequence_number_received, 
-      "time_taken_to_correct_ns": server_received_at - timeout_at
+      "time_taken_to_correct_s": (server_received_at - timeout_at) / 1_000_000_000
     }
 
     self.time_mistakes.append(time_mistake_dict)
@@ -115,7 +115,7 @@ class TuningPhiTimeoutCalculator:
     self.amount_misses += 1
     time_mistake_dict  = {
       "sequence_number": sequence_number_received, 
-      "time_taken_to_correct_ns": server_received_at - timeout_at
+      "time_taken_to_correct_s": (server_received_at - timeout_at) / 1_000_000_000
     }
 
     if self.mean_mistake == -1:
@@ -218,7 +218,7 @@ class EstimatedTimeoutCalculator:
     self.amount_misses += 1
     time_mistake_dict  = {
       "sequence_number": sequence_number_received, 
-      "time_taken_to_correct_ns": server_received_at - timeout_at
+      "time_taken_to_correct_s": (server_received_at - timeout_at) / 1_000_000_000
     }
 
     self.time_mistakes.append(time_mistake_dict)
@@ -327,7 +327,7 @@ csv_filename_tun = os.path.join(csv_output_dir, 'tun_phi.csv')
 csv_filename_est = os.path.join(csv_output_dir, 'estimated.csv')
 # --- FIM DAS MODIFICAÇÕES ---
 
-column_headers = ['sequence_number', 'time_taken_to_correct_ns']
+column_headers = ['sequence_number', 'time_taken_to_correct_s']
 
 try:
     with open(csv_filename_jac, 'w', newline='', encoding='utf-8') as csvfile:

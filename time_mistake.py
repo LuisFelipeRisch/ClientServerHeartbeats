@@ -92,6 +92,7 @@ class TuningPhiTimeoutCalculator:
     self.time_period_squared_sum = 0.0
     self.estimated_rtt           = -1
     self.deviation_rtt           = -1
+    self.mean_mistake            = -1
     self.last_server_received_at = -1
     self.interval                = -1 
     self.amount_misses           = 0
@@ -113,6 +114,11 @@ class TuningPhiTimeoutCalculator:
       "sequence_number": sequence_number_received, 
       "time_taken_to_correct_ns": server_received_at - timeout_at
     }
+
+    if self.mean_mistake == -1:
+      self.mean_mistake = server_received_at - timeout_at
+    else: 
+      self.mean_mistake = (self.ALPHA * self.mean_mistake) + (1 - self.ALPHA) * (server_received_at - timeout_at)
 
     self.time_mistakes.append(time_mistake_dict)
 
@@ -172,7 +178,9 @@ class TuningPhiTimeoutCalculator:
       calculated_phi = math.ceil(abs(((trend + self.deviation_rtt) - self.estimated_rtt) / float(self.deviation_rtt)))
 
     timeout_at = server_received_at + (self.estimated_rtt + (4 * calculated_phi) * self.deviation_rtt)
-
+    if self.mean_mistake != -1:
+      timeout_at += self.mean_mistake
+       
     self.calculated_timeouts_at.append(timeout_at)
 
 class EstimatedTimeoutCalculator: 

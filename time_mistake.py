@@ -150,6 +150,9 @@ class TuningPhiTimeoutCalculator:
         self.deviation_rtt = self.ALPHA * self.deviation_rtt + (1 - self.ALPHA) * abs(self.estimated_rtt - self.interval)
         self.estimated_rtt = self.ALPHA * self.estimated_rtt + (1 - self.ALPHA) * self.interval
   
+  def __can_sum_mean_mistake(self):
+    return self.mean_mistake != -1
+
   def calculate_timeout_at(self, server_received_at, sequence_number_received):
     self.__update_statistics(server_received_at, sequence_number_received)
     self.__update_estimated_an_deviation_rtt(server_received_at)
@@ -182,7 +185,7 @@ class TuningPhiTimeoutCalculator:
       calculated_phi = math.ceil(abs(((trend + self.deviation_rtt) - self.estimated_rtt) / float(self.deviation_rtt)))
 
     timeout_at = server_received_at + (self.estimated_rtt + (PHI_MULTIPLIER * calculated_phi) * self.deviation_rtt)
-    if self.mean_mistake != -1:
+    if self.__can_sum_mean_mistake():
       timeout_at += self.mean_mistake
        
     self.calculated_timeouts_at.append(timeout_at)

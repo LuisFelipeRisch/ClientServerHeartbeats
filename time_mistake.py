@@ -12,6 +12,7 @@ NS_TO_INCREASE           = 2000000000
 PHI_MULTIPLIER           = 1
 
 def chance(perc):
+  return False
   sorteio = random.uniform(0, 100)
   return sorteio < perc
 
@@ -276,22 +277,25 @@ class EstimatedTimeoutCalculator:
 
     self.calculated_timeouts_at.append(timeout_at)
 
-if len(sys.argv) < 2 or len(sys.argv) > 3:
-    print("Uso: python seu_script.py <week_day|weekend> [tun_phi_2|tun_phi_4]")
-    sys.exit(1)
+if len(sys.argv) < 3 or len(sys.argv) > 4:
+  print("Uso: python seu_script.py <week_day|weekend> <fonte_trace> [tun_phi_2|tun_phi_4]")
+  print("Exemplo: python seu_script.py week_day ufpr_sydney tun_phi_4")
+  sys.exit(1)
 
 day_type = sys.argv[1]
+trace_source = sys.argv[2] 
+
 if day_type not in ['week_day', 'weekend']:
-    print("Erro: O primeiro parâmetro deve ser 'week_day' ou 'weekend'.")
-    sys.exit(1)
+  print("Erro: O primeiro parâmetro deve ser 'week_day' ou 'weekend'.")
+  sys.exit(1)
 
 phi_type = 'tun_phi_normal'
-if len(sys.argv) == 3:
-    optional_param = sys.argv[2]
-    if optional_param not in ['tun_phi_2', 'tun_phi_4']:
-        print("Aviso: O segundo parâmetro opcional é inválido. Usando o valor padrão 'tun_phi_normal'.")
-    else:
-        phi_type = optional_param
+if len(sys.argv) == 4:
+  optional_param = sys.argv[3]
+  if optional_param not in ['tun_phi_2', 'tun_phi_4']:
+      print("Aviso: O terceiro parâmetro opcional é inválido. Usando o valor padrão 'tun_phi_normal'.")
+  else:
+      phi_type = optional_param
 
 if phi_type == 'tun_phi_2':
   PHI_MULTIPLIER = 2
@@ -302,30 +306,33 @@ jac_timeout_calculator = JacobsonTimeoutCalculator()
 tun_phi_calculator     = TuningPhiTimeoutCalculator()
 estimated_calculator   = EstimatedTimeoutCalculator()
 
-for i in range(0, 18): 
-  with open(f"./traces_ufpr_ufsm_{day_type}/raw/log_{i}.txt") as file:
+trace_directory = f"./traces_{trace_source}_{day_type}/raw"
+
+for i in range(0, 18):
+  file_path = os.path.join(trace_directory, f"log_{i}.txt")
+
+  with open(file_path) as file:
     for x, line in enumerate(file, start=1):
-      if x == 1: 
+      if x == 1:
         continue
-      
-      splitted_line = line.split(';')
-      
+
+      splitted_line = line.strip().split(';')
+
       server_received_at       = float(splitted_line[SERVER_RECEIVED_AT_INDEX])
       sequence_number_received = int(splitted_line[SEQUENCE_NUMBER_INDEX])
 
-      if chance(0.01): 
+      if chance(0.01):
         server_received_at += NS_TO_INCREASE
 
       jac_timeout_calculator.calculate_timeout_at(server_received_at, sequence_number_received)
       tun_phi_calculator.calculate_timeout_at(server_received_at, sequence_number_received)
       estimated_calculator.calculate_timeout_at(server_received_at, sequence_number_received)
 
-csv_output_dir = f'csvs/{day_type}/time_mistake/{phi_type}'
+csv_output_dir = f'csvs/{trace_source}/{day_type}/time_mistake/{phi_type}'
 
 csv_filename_jac = os.path.join(csv_output_dir, 'jac.csv')
 csv_filename_tun = os.path.join(csv_output_dir, 'tun_phi.csv')
 csv_filename_est = os.path.join(csv_output_dir, 'estimated.csv')
-# --- FIM DAS MODIFICAÇÕES ---
 
 column_headers = ['sequence_number', 'time_taken_to_correct_s']
 

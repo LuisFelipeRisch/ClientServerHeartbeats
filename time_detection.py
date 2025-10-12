@@ -10,22 +10,27 @@ SERVER_RECEIVED_AT_INDEX = 3
 SEQUENCE_NUMBER_INDEX    = 4
 PHI_MULTIPLIER           = 1
 
-if len(sys.argv) < 3 or len(sys.argv) > 4:
-    print("Uso: python seu_script.py <BREAK_ON_SEQUENCE_NB> <week_day|weekend> [tun_phi_2|tun_phi_4]")
-    sys.exit(1)
+if len(sys.argv) < 4 or len(sys.argv) > 5:
+  print("Uso: python seu_script.py <BREAK_ON_SEQUENCE_NB> <week_day|weekend> <ufpr_ufsm|ufpr_sydney> [tun_phi_2|tun_phi_4]")
+  sys.exit(1)
 
 day_type = sys.argv[2]
 if day_type not in ['week_day', 'weekend']:
-    print("Erro: O primeiro parâmetro deve ser 'week_day' ou 'weekend'.")
-    sys.exit(1)
+  print("Erro: O primeiro parâmetro deve ser 'week_day' ou 'weekend'.")
+  sys.exit(1)
+
+trace_source = sys.argv[3]
+if trace_source not in ['ufpr_ufsm', 'ufpr_sydney']:
+  print("Erro: O segundo parâmetro deve ser 'ufpr_ufsm' ou 'ufpr_sydney'.")
+  sys.exit(1)
 
 phi_type = 'tun_phi_normal'
-if len(sys.argv) == 4:
-    optional_param = sys.argv[3]
-    if optional_param not in ['tun_phi_2', 'tun_phi_4']:
-        print("Aviso: O segundo parâmetro opcional é inválido. Usando o valor padrão 'tun_phi_normal'.")
-    else:
-        phi_type = optional_param
+if len(sys.argv) == 5:
+  optional_param = sys.argv[4]
+  if optional_param not in ['tun_phi_2', 'tun_phi_4']:
+    print("Aviso: O segundo parâmetro opcional é inválido. Usando o valor padrão 'tun_phi_normal'.")
+  else:
+    phi_type = optional_param
 
 if phi_type == 'tun_phi_2':
   PHI_MULTIPLIER = 2
@@ -341,7 +346,7 @@ should_stop = False
 for i in range(0, 18): 
   if should_stop: break
 
-  with open(f"./traces_ufpr_ufsm_{day_type}/raw/log_{i}.txt") as file:
+  with open(f"./traces_{trace_source}_{day_type}/raw/log_{i}.txt") as file:
     for x, line in enumerate(file, start=1):
       if x == 1: 
         continue
@@ -359,6 +364,6 @@ for i in range(0, 18):
         should_stop = True
         break
 
-add_row_to_csv(f'csvs/{day_type}/time_detection/{phi_type}/jac.csv', sequence_number_received, jac_timeout_calculator.time_detection)
-add_row_to_csv(f'csvs/{day_type}/time_detection/{phi_type}/tun_phi.csv', sequence_number_received, tun_phi_calculator.time_detection)
-add_row_to_csv(f'csvs/{day_type}/time_detection/{phi_type}/estimated.csv', sequence_number_received, estimated_calculator.time_detection)
+add_row_to_csv(f'csvs/{trace_source}/{day_type}/time_detection/{phi_type}/jac.csv', sequence_number_received, jac_timeout_calculator.time_detection)
+add_row_to_csv(f'csvs/{trace_source}/{day_type}/time_detection/{phi_type}/tun_phi.csv', sequence_number_received, tun_phi_calculator.time_detection)
+add_row_to_csv(f'csvs/{trace_source}/{day_type}/time_detection/{phi_type}/estimated.csv', sequence_number_received, estimated_calculator.time_detection)

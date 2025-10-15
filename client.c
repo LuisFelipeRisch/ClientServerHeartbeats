@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include <netdb.h>
 #include <string.h>
 #include <sys/time.h>
@@ -14,13 +15,15 @@
 #include "shared.h"
 #include "config.h"
 
-char               *server_ip_addr;
-int                server_port, socket_desc;
-struct sockaddr_in server_addr;
-socklen_t          server_struct_length;
-unsigned long      sequence_number = 0;
+int                 server_port;
+int                 socket_desc;
+int                 num_servers;           
+struct sockaddr_in* server_addrs;         
+char**              server_ip_addrs; 
+socklen_t           server_struct_length;
+unsigned long       sequence_number = 0;
 
-void heartbeat(){
+void heartbeat() {
   message_t       message;
   struct timespec st;
 
@@ -28,6 +31,8 @@ void heartbeat(){
     if (VERBOSE) fprintf(stdout, "Client has reached the maximum number of messages (%ld) allowed for sending\n", MAX_HEARTBEAT_COUNT);
     
     close(socket_desc);
+    free(server_addrs); // Libera a memória alocada
+    free(server_ip_addrs);
     exit(EXIT_SUCCESS);
   }
 
@@ -39,23 +44,25 @@ void heartbeat(){
   message.sequence_number = sequence_number++;
   message.sent_at_ns      = st.tv_sec * (long)1E9 + st.tv_nsec;
 
-  if (sendto(socket_desc, 
-             &message, 
-             sizeof(message), 
-             0, 
-             (struct sockaddr*) &server_addr, 
-             server_struct_length) < 0) {
-              fprintf(stderr, "Failed to send heartbeat message to server!\n"); 
-              exit(EXIT_FAILURE);
-             }
-  
-  if (VERBOSE) 
-    fprintf(stdout, 
-            "Message sent to IP: %s at port: %d. Message data: message.sequence_number: %ld and message.sent_at_ns: %ld\n",
-            server_ip_addr, 
-            server_port, 
-            message.sequence_number, 
-            message.sent_at_ns);
+  for (int i = 0; i < num_servers; i++) {
+    if (sendto(socket_desc, 
+               &message, 
+               sizeof(message), 
+               0, 
+               (struct sockaddr*) &server_addrs[i],
+               server_struct_length) < 0) {
+                fprintf(stderr, "Failed to send heartbeat message to server %s!\n", server_ip_addrs[i]);
+               }
+    
+    if (VERBOSE) {
+      fprintf(stdout, 
+              "Message sent to IP: %s at port: %d. Data: seq_num: %ld, sent_at_ns: %ld\n",
+              server_ip_addrs[i],
+              server_port, 
+              message.sequence_number, 
+              message.sent_at_ns);
+    }
+  }
 }
 
 void init_heartbeat_interval() {
@@ -77,11 +84,11 @@ void init_heartbeat_interval() {
 }
 
 void show_program_execution_instructions(char *program_name) {
-  fprintf(stderr, "%s <server_ip_address> <server_port>\n", program_name);
+  fprintf(stderr, "Usage: %s <server_port> <server_ip_1> <server_ip_2> ... <server_ip_n>\n", program_name);
 }
 
 int check_arguments_length(int argc) {
-  return argc == 3;
+  return argc >= 3;
 }
 
 int main(int argc, char *argv[]) {
@@ -91,16 +98,36 @@ int main(int argc, char *argv[]) {
     exit(EXIT_FAILURE);
   }
 
-  server_struct_length = sizeof(server_addr);
-  server_ip_addr       = argv[1];
-  server_port          = atoi(argv[2]);
+  server_port          = atoi(argv[1]);
+  num_servers          = argc - 2;
+  server_struct_length = sizeof(struct sockaddr_in);
   socket_desc          = create_udp_socket();
 
-  setup_server_socket_addr(&server_addr, server_ip_addr, server_port);
+  server_addrs = malloc(num_servers * sizeof(struct sockaddr_in));
+  server_ip_addrs = malloc(num_servers * sizeof(char*));
+
+  if (server_addrs == NULL || server_ip_addrs == NULL) {
+    fprintf(stderr, "Failed to allocate memory for server addresses\n");
+    exit(EXIT_FAILURE);
+  }
+
+  if(VERBOSE) 
+    fprintf(stdout, "Configuring client to send to %d server(s) on port %d:\n", num_servers, server_port);
+  
+  for (int i = 0; i < num_servers; i++) {
+    server_ip_addrs[i] = argv[i + 2];
+
+    if(VERBOSE)
+      fprintf(stdout, " -> Server %d: %s\n", i + 1, server_ip_addrs[i]);
+
+    setup_server_socket_addr(&server_addrs[i], server_ip_addrs[i], server_port);
+  }
 
   init_heartbeat_interval();
 
-  while (1) pause();
-
+  while (1) {
+    pause();
+  }
+  
   return EXIT_SUCCESS;
 }

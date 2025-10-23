@@ -11,10 +11,23 @@ SEQUENCE_NUMBER_INDEX    = 4
 NS_TO_INCREASE           = 2000000000 
 PHI_MULTIPLIER           = 1
 
+def save_mistakes_to_csv(filename, data, headers):
+    try:
+        with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=headers)
+            writer.writeheader()
+            for row in data:
+                writer.writerow(row)
+        print(f"Dados salvos com sucesso em '{filename}'")
+    except IOError:
+        print(f"Erro de I/O: Não foi possível escrever no arquivo '{filename}'.")
+    except Exception as e:
+        print(f"Ocorreu um erro inesperado ao escrever em '{filename}': {e}")
+
 def chance(perc):
   return False
-  sorteio = random.uniform(0, 100)
-  return sorteio < perc
+  # sorteio = random.uniform(0, 100)
+  # return sorteio < perc
 
 class JacobsonTimeoutCalculator:
   ALPHA = 0.9
@@ -333,43 +346,14 @@ for i in range(0, 18):
 
 csv_output_dir = f'csvs/{trace_source}/{day_type}/time_mistake/{phi_type}'
 
+os.makedirs(csv_output_dir, exist_ok=True)
+
 csv_filename_jac = os.path.join(csv_output_dir, 'jac.csv')
 csv_filename_tun = os.path.join(csv_output_dir, 'tun_phi.csv')
 csv_filename_est = os.path.join(csv_output_dir, 'estimated.csv')
 
 column_headers = ['sequence_number', 'time_taken_to_correct_s']
 
-try:
-    with open(csv_filename_jac, 'w', newline='', encoding='utf-8') as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames=column_headers)
-        writer.writeheader()
-        for row in jac_timeout_calculator.time_mistakes:
-            writer.writerow(row)
-except IOError:
-    print(f"I/O Error: Could not write to file '{csv_filename_jac}'.")
-except Exception as e:
-    print(f"An unexpected error occurred: {e}")
-
-
-try:
-    with open(csv_filename_tun, 'w', newline='', encoding='utf-8') as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames=column_headers)
-        writer.writeheader()
-        for row in tun_phi_calculator.time_mistakes:
-            writer.writerow(row)
-except IOError:
-    print(f"I/O Error: Could not write to file '{csv_filename_tun}'.")
-except Exception as e:
-    print(f"An unexpected error occurred: {e}")
-
-
-try:
-    with open(csv_filename_est, 'w', newline='', encoding='utf-8') as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames=column_headers)
-        writer.writeheader()
-        for row in estimated_calculator.time_mistakes:
-            writer.writerow(row)
-except IOError:
-    print(f"I/O Error: Could not write to file '{csv_filename_est}'.")
-except Exception as e:
-    print(f"An unexpected error occurred: {e}")
+save_mistakes_to_csv(csv_filename_jac, jac_timeout_calculator.time_mistakes, column_headers)
+save_mistakes_to_csv(csv_filename_tun, tun_phi_calculator.time_mistakes, column_headers)
+save_mistakes_to_csv(csv_filename_est, estimated_calculator.time_mistakes, column_headers)

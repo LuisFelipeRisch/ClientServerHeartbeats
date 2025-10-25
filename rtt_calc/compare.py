@@ -40,6 +40,56 @@ class JacobsonTimeoutCalculator:
     self.__update_statistics(current_rtt)
     self.__update_estimated_an_deviation_rtt(current_rtt)
     self.timeouts_over_time.append(self.estimated_rtt + self.PHI * self.deviation_rtt)
+
+class RTOTimeoutCalculator:
+  ALPHA = 0.9
+  PHI   = 4.0
+
+  def __init__(self):
+    self.estimated_rtt      = -1
+    self.deviation_rtt      = -1
+    self.amount_hits        = 0
+    self.amount_misses      = 0
+    self.timeouts_over_time = []
+    self.mean_mistake       = -1
+
+  def __update_estimated_an_deviation_rtt(self, current_rtt): 
+    if self.estimated_rtt == -1 and self.deviation_rtt == -1: 
+      self.estimated_rtt = current_rtt
+      self.deviation_rtt = 0
+    else:
+      self.deviation_rtt = self.ALPHA * self.deviation_rtt + (1 - self.ALPHA) * abs(self.estimated_rtt - current_rtt)
+      self.estimated_rtt = self.ALPHA * self.estimated_rtt + (1 - self.ALPHA) * current_rtt
+
+  def __update_statistics(self, current_rtt): 
+    if len(self.timeouts_over_time) == 0: return
+
+    last_timeout = self.timeouts_over_time[-1]
+    if last_timeout > current_rtt or math.isclose(last_timeout, current_rtt): 
+      self.amount_hits += 1
+    else:
+      self.amount_misses += 1
+
+      if self.mean_mistake == -1:
+        self.mean_mistake = current_rtt - last_timeout
+      else: 
+        self.mean_mistake = (self.ALPHA * self.mean_mistake) + (1 - self.ALPHA) * (current_rtt - last_timeout)
+  
+  def print_statistics(self):
+    print("NOVO RTO statistics:")
+    print(f"\t--> Amount of Hits: #{self.amount_hits}")
+    print(f"\t--> Amount of Misses: #{self.amount_misses}\n")
+    
+  def calculate_timeout(self, current_rtt):
+    self.__update_statistics(current_rtt)
+    self.__update_estimated_an_deviation_rtt(current_rtt)
+
+    timeout = self.estimated_rtt + self.PHI * self.deviation_rtt
+
+    if self.mean_mistake != -1: 
+      timeout += self.mean_mistake
+
+    self.timeouts_over_time.append(timeout)
       
 class TuningPhiTimeoutCalculator: 
   ALPHA     = 0.9
@@ -138,7 +188,7 @@ class TuningPhiV2TimeoutCalculator:
       self.amount_misses += 1
   
   def print_statistics(self):
-    print("Tuning Phi V2 statistics:")
+    print("Estimado statistics:")
     print(f"\t--> Amount of Hits: #{self.amount_hits}")
     print(f"\t--> Amount of Misses: #{self.amount_misses}\n")
   
@@ -166,6 +216,7 @@ class TuningPhiV2TimeoutCalculator:
 jac_timeout_calculator        = JacobsonTimeoutCalculator()
 tun_phi_timeout_calculator    = TuningPhiTimeoutCalculator()
 tun_phi_v2_timeout_calculator = TuningPhiV2TimeoutCalculator()
+rto_timeout_calculator        = RTOTimeoutCalculator()
 times                         = []
 rtts                          = []
 
@@ -178,6 +229,7 @@ with open("./data2.txt") as file:
 
       jac_timeout_calculator.calculate_timeout(current_rtt)
       tun_phi_timeout_calculator.calculate_timeout(current_rtt)
+      rto_timeout_calculator.calculate_timeout(current_rtt)
       tun_phi_v2_timeout_calculator.calculate_timeout(current_rtt)
     except ValueError: 
       print(f"Erro: linha {i} não contém um número válido: {line.strip()}")
@@ -186,12 +238,13 @@ with open("./data2.txt") as file:
 
 for x in range(len(rtts)):
   if x == 0: 
-    print(f'RTT: {rtts[x]} | TIMEOUT JAC: - | TIMEOUT Tun Phi: -')
+    print(f'RTT: {rtts[x]} | TIMEOUT JAC: - | TIMEOUT Tun Phi: - | TIMEOUT Novo RTO: -')
   else: 
-    print(f'RTT: {rtts[x]} | TIMEOUT JAC: {jac_timeout_calculator.timeouts_over_time[x - 1]} | TIMEOUT Tun Phi: {tun_phi_timeout_calculator.timeouts_over_time[x - 1]}')
+    print(f'RTT: {rtts[x]} | TIMEOUT JAC: {jac_timeout_calculator.timeouts_over_time[x - 1]} | TIMEOUT Tun Phi: {tun_phi_timeout_calculator.timeouts_over_time[x - 1]} | TIMEOUT Novo RTO: {rto_timeout_calculator.timeouts_over_time[x - 1]}')
 
 jac_timeout_calculator.print_statistics()
 tun_phi_timeout_calculator.print_statistics()
+rto_timeout_calculator.print_statistics()
 # tun_phi_v2_timeout_calculator.print_statistics()
 
 # plt.plot(times, rtts, marker='o', linestyle='--', color='b', label='Actual Rtt')

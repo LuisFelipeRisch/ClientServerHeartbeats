@@ -220,7 +220,7 @@ rto_timeout_calculator        = RTOTimeoutCalculator()
 times                         = []
 rtts                          = []
 
-with open("./data2.txt") as file: 
+with open("./pings.txt") as file: 
   for i, line in enumerate(file, start=1): 
     try:
       current_rtt = float(line.strip())
@@ -245,7 +245,7 @@ for x in range(len(rtts)):
 jac_timeout_calculator.print_statistics()
 tun_phi_timeout_calculator.print_statistics()
 rto_timeout_calculator.print_statistics()
-# tun_phi_v2_timeout_calculator.print_statistics()
+tun_phi_v2_timeout_calculator.print_statistics()
 
 # plt.plot(times, rtts, marker='o', linestyle='--', color='b', label='Actual Rtt')
 # plt.plot([t + 1 for t in times], jac_timeout_calculator.timeouts_over_time, marker='s', linestyle='-', color='g', label='Timeout by Jac')

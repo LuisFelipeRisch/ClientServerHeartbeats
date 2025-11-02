@@ -151,6 +151,9 @@ class TuningPhiTimeoutCalculator(RTOTimeoutCalculator, _TrendCalculatorMixin):
                       float(self.deviation_rtt))
       calculated_phi = math.ceil(phi_float) 
 
+    calculated_phi = max(1.0, calculated_phi)
+    calculated_phi = min(4.0, calculated_phi)
+
     timeout = self.estimated_rtt + calculated_phi * self.deviation_rtt
     self.timeouts_over_time.append(timeout)
 

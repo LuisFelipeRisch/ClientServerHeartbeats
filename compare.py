@@ -31,12 +31,14 @@ class BaseTimeoutCalculator(ABC):
   def _update_statistics(self, current_rtt: float):
     if not self.timeouts_over_time:
       return
-
     last_timeout = self.timeouts_over_time[-1]
+    # if current_rtt == 100112618: breakpoint()
+    # if isinstance(self, JacobsonTimeoutCalculator): breakpoint()
     
     if last_timeout > current_rtt or math.isclose(last_timeout, current_rtt): 
       self.amount_hits += 1
     else:
+      # if isinstance(self, JacobsonTimeoutCalculator): breakpoint()
       self.amount_misses += 1
 
   def print_statistics(self):
@@ -89,6 +91,8 @@ class JacobsonTimeoutCalculator(BaseTimeoutCalculator):
     self._update_rtt_estimates(current_rtt)
     
     timeout = self.estimated_rtt + self.PHI * self.deviation_rtt
+    # if isinstance(self, JacobsonTimeoutCalculator): breakpoint()
+
     self.timeouts_over_time.append(timeout)
 
 class RTOTimeoutCalculator(BaseTimeoutCalculator):

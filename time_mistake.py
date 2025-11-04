@@ -44,10 +44,9 @@ class JacobsonTimeoutCalculator:
 
   def __update_statistics(self, server_received_at, sequence_number_received): 
     if len(self.calculated_timeouts_at) == 0: return
-
     timeout_at = self.calculated_timeouts_at[-1]
 
-    if timeout_at > server_received_at or math.isclose(timeout_at, server_received_at): 
+    if int(timeout_at) >= server_received_at: 
       self.amount_hits += 1
       return
     
@@ -95,6 +94,80 @@ class JacobsonTimeoutCalculator:
     timeout_at = server_received_at + (self.estimated_rtt + self.PHI * self.deviation_rtt)
 
     self.calculated_timeouts_at.append(timeout_at)
+
+class NewRTOTimeoutCalculator:
+  ALPHA = 0.9
+  PHI   = 4.0
+
+  def __init__(self):
+    self.estimated_rtt           = -1
+    self.deviation_rtt           = -1
+    self.last_server_received_at = -1
+    self.amount_misses           = 0
+    self.amount_hits             = 0
+    self.calculated_timeouts_at  = []
+    self.time_mistakes           = []
+    self.mean_mistake            = -1
+
+  def __update_statistics(self, server_received_at, sequence_number_received): 
+    if len(self.calculated_timeouts_at) == 0: return
+    timeout_at = self.calculated_timeouts_at[-1]
+
+    if int(timeout_at) >= server_received_at: 
+      self.amount_hits += 1
+      return
+    
+    self.amount_misses += 1
+    time_mistake_dict  = {
+      "sequence_number": sequence_number_received, 
+      "time_taken_to_correct_s": (server_received_at - timeout_at) / 1_000_000_000
+    }
+
+    if self.mean_mistake == -1:
+      self.mean_mistake = server_received_at - timeout_at
+    else: 
+      self.mean_mistake = (self.ALPHA * self.mean_mistake) + (1 - self.ALPHA) * (server_received_at - timeout_at)
+
+    self.time_mistakes.append(time_mistake_dict)
+
+    unix_seconds_timeout_at         = timeout_at / 1_000_000_000 
+    unix_seconds_server_received_at = server_received_at / 1_000_000_000
+
+    utc_time_timeout_at         = datetime.fromtimestamp(unix_seconds_timeout_at, tz=ZoneInfo("UTC"))
+    utc_time_server_received_at = datetime.fromtimestamp(unix_seconds_server_received_at, tz=ZoneInfo("UTC"))
+
+    local_zone = ZoneInfo("America/Sao_Paulo")
+
+    local_time_timeout_at         = utc_time_timeout_at.astimezone(local_zone)
+    local_time_server_received_at = utc_time_server_received_at.astimezone(local_zone)
+
+    print(f"[TIMEOUT - NewRTO] - Expected to receive message of sequence number {sequence_number_received} at least until {local_time_timeout_at.strftime('%Y-%m-%d %H:%M:%S %Z')}, but it was received at {local_time_server_received_at.strftime('%Y-%m-%d %H:%M:%S %Z')}")
+
+  def __update_estimated_an_deviation_rtt(self, server_received_at): 
+    if self.last_server_received_at != -1: 
+      interval = server_received_at - self.last_server_received_at
+
+      if self.estimated_rtt == -1 and self.deviation_rtt == -1: 
+        self.estimated_rtt = interval
+        self.deviation_rtt = 0
+      else: 
+        self.deviation_rtt = self.ALPHA * self.deviation_rtt + (1 - self.ALPHA) * abs(self.estimated_rtt - interval)
+        self.estimated_rtt = self.ALPHA * self.estimated_rtt + (1 - self.ALPHA) * interval
+    
+  def calculate_timeout_at(self, server_received_at, sequence_number_received):
+    self.__update_statistics(server_received_at, sequence_number_received)
+    self.__update_estimated_an_deviation_rtt(server_received_at)
+
+    self.last_server_received_at = server_received_at
+
+    if self.estimated_rtt == -1 and self.deviation_rtt == -1: 
+      return -1
+    
+    timeout_at = server_received_at + (self.estimated_rtt + self.PHI * self.deviation_rtt)
+    if self.mean_mistake != -1: 
+      timeout_at += self.mean_mistake
+
+    self.calculated_timeouts_at.append(timeout_at)
   
 class TuningPhiTimeoutCalculator: 
   ALPHA   = 0.9
@@ -122,7 +195,7 @@ class TuningPhiTimeoutCalculator:
 
     timeout_at = self.calculated_timeouts_at[-1]
 
-    if timeout_at > server_received_at or math.isclose(timeout_at, server_received_at): 
+    if int(timeout_at) >= server_received_at: 
       self.amount_hits += 1
       return
     
@@ -162,9 +235,6 @@ class TuningPhiTimeoutCalculator:
       else: 
         self.deviation_rtt = self.ALPHA * self.deviation_rtt + (1 - self.ALPHA) * abs(self.estimated_rtt - self.interval)
         self.estimated_rtt = self.ALPHA * self.estimated_rtt + (1 - self.ALPHA) * self.interval
-  
-  def __can_sum_mean_mistake(self):
-    return self.mean_mistake != -1
 
   def calculate_timeout_at(self, server_received_at, sequence_number_received):
     self.__update_statistics(server_received_at, sequence_number_received)
@@ -197,9 +267,10 @@ class TuningPhiTimeoutCalculator:
     else:
       calculated_phi = math.ceil(abs(((trend + self.deviation_rtt) - self.estimated_rtt) / float(self.deviation_rtt)))
 
+    calculated_phi = max(1.0, calculated_phi)
+    calculated_phi = min(4.0, calculated_phi)
+
     timeout_at = server_received_at + (self.estimated_rtt + (PHI_MULTIPLIER * calculated_phi) * self.deviation_rtt)
-    if self.__can_sum_mean_mistake():
-      timeout_at += self.mean_mistake
        
     self.calculated_timeouts_at.append(timeout_at)
 
@@ -228,7 +299,7 @@ class EstimatedTimeoutCalculator:
 
     timeout_at = self.calculated_timeouts_at[-1]
 
-    if timeout_at > server_received_at or math.isclose(timeout_at, server_received_at): 
+    if int(timeout_at) >= server_received_at: 
       self.amount_hits += 1
       return
     
@@ -321,10 +392,11 @@ elif phi_type == 'tun_phi_4':
 jac_timeout_calculator = JacobsonTimeoutCalculator()
 tun_phi_calculator     = TuningPhiTimeoutCalculator()
 estimated_calculator   = EstimatedTimeoutCalculator()
+new_rto_calculator     = NewRTOTimeoutCalculator()
 
 trace_directory = f"./traces_{trace_source}_{day_type}/raw"
 
-for i in range(0, 18):
+for i in range(0, 1):
   file_path = os.path.join(trace_directory, f"log_{i}.txt")
 
   with open(file_path) as file:
@@ -334,7 +406,7 @@ for i in range(0, 18):
 
       splitted_line = line.strip().split(';')
 
-      server_received_at       = float(splitted_line[SERVER_RECEIVED_AT_INDEX])
+      server_received_at       = int(splitted_line[SERVER_RECEIVED_AT_INDEX])
       sequence_number_received = int(splitted_line[SEQUENCE_NUMBER_INDEX])
 
       if chance(0.01):
@@ -343,6 +415,7 @@ for i in range(0, 18):
       jac_timeout_calculator.calculate_timeout_at(server_received_at, sequence_number_received)
       tun_phi_calculator.calculate_timeout_at(server_received_at, sequence_number_received)
       estimated_calculator.calculate_timeout_at(server_received_at, sequence_number_received)
+      new_rto_calculator.calculate_timeout_at(server_received_at, sequence_number_received)
 
 csv_output_dir = f'csvs/{trace_source}/{day_type}/time_mistake/{phi_type}'
 
@@ -351,9 +424,11 @@ os.makedirs(csv_output_dir, exist_ok=True)
 csv_filename_jac = os.path.join(csv_output_dir, 'jac.csv')
 csv_filename_tun = os.path.join(csv_output_dir, 'tun_phi.csv')
 csv_filename_est = os.path.join(csv_output_dir, 'estimated.csv')
+csv_filename_new = os.path.join(csv_output_dir, 'new_rto.csv')
 
 column_headers = ['sequence_number', 'time_taken_to_correct_s']
 
 save_mistakes_to_csv(csv_filename_jac, jac_timeout_calculator.time_mistakes, column_headers)
 save_mistakes_to_csv(csv_filename_tun, tun_phi_calculator.time_mistakes, column_headers)
 save_mistakes_to_csv(csv_filename_est, estimated_calculator.time_mistakes, column_headers)
+save_mistakes_to_csv(csv_filename_new, new_rto_calculator.time_mistakes, column_headers)

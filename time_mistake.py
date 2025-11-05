@@ -65,6 +65,8 @@ class BaseTimeoutCalculator:
     }
     self.time_mistakes.append(time_mistake_dict)
 
+    return
+
     local_time_timeout_at = self._format_time(timeout_at)
     local_time_server_received_at = self._format_time(server_received_at)
 
@@ -74,7 +76,6 @@ class BaseTimeoutCalculator:
       f"but it was received at {local_time_server_received_at}"
     )
 
-  # --- CORREÇÃO: Renomeado de __update_statistics para _update_statistics ---
   def _update_statistics(self, server_received_at, sequence_number_received):
     """Atualiza as estatísticas de acertos (hits) e erros (misses)."""
     if not self.calculated_timeouts_at:
@@ -89,7 +90,6 @@ class BaseTimeoutCalculator:
       # Chama o método _on_miss (que pode ser sobrescrito)
       self._on_miss(timeout_at, server_received_at, sequence_number_received)
 
-  # --- CORREÇÃO: Renomeado de __update_estimated_an_deviation_rtt para _update_estimated_an_deviation_rtt ---
   def _update_estimated_an_deviation_rtt(self, server_received_at):
     """
     Atualiza o RTT estimado e o desvio (algoritmo de Jacobson).
@@ -112,7 +112,6 @@ class BaseTimeoutCalculator:
   def calculate_timeout_at(self, server_received_at, sequence_number_received):
     """Ponto de entrada principal. Executa o template de cálculo."""
     
-    # --- CORREÇÃO: Chamadas renomeadas para usar um underscore ---
     self._update_statistics(server_received_at, sequence_number_received)
     self._update_estimated_an_deviation_rtt(server_received_at) # Agora chamará o método correto (com override)
 
@@ -176,7 +175,6 @@ class TrendBasedCalculator(BaseTimeoutCalculator):
     self.time_period_squared_sum = 0.0
     self.interval                = -1 # Precisa de 'self.interval'
 
-  # --- CORREÇÃO: Renomeado de __update_estimated_an_deviation_rtt para _update_estimated_an_deviation_rtt ---
   def _update_estimated_an_deviation_rtt(self, server_received_at):
     """
     Sobrescreve o método base para salvar self.interval,
@@ -193,8 +191,6 @@ class TrendBasedCalculator(BaseTimeoutCalculator):
         self.deviation_rtt = self.ALPHA * self.deviation_rtt + (1 - self.ALPHA) * abs(self.estimated_rtt - self.interval)
         self.estimated_rtt = self.ALPHA * self.estimated_rtt + (1 - self.ALPHA) * self.interval
     
-    # Se self.last_server_received_at == -1, self.interval permanece -1 (correto para a primeira iteração)
-
   def _calculate_trend(self):
     """
     Calcula e retorna a tendência (trend) usando regressão linear
@@ -258,35 +254,18 @@ def main():
   """Função principal para executar o processamento do trace."""
   
   # --- 1. Parseamento de Argumentos ---
-  if len(sys.argv) < 3 or len(sys.argv) > 4:
-    print("Uso: python seu_script.py <week_day|weekend> <fonte_trace> [tun_phi_2|tun_phi_4]")
-    print("Exemplo: python seu_script.py week_day ufpr_sydney tun_phi_4")
+  # Atualizado para aceitar exatamente 1 argumento
+  if len(sys.argv) != 2:
+    print("Uso: python seu_script.py <caminho_para_pasta_raw_traces>")
+    print("Exemplo: python seu_script.py ./traces_ufpr_sydney_week_day/raw")
     sys.exit(1)
 
-  day_type = sys.argv[1]
-  trace_source = sys.argv[2]
-
-  if day_type not in ['week_day', 'weekend']:
-    print("Erro: O primeiro parâmetro deve ser 'week_day' ou 'weekend'.")
-    sys.exit(1)
-
-  phi_type = 'tun_phi_normal'
-  phi_multiplier_value = 1  # Valor padrão original
-  
-  if len(sys.argv) == 4:
-    optional_param = sys.argv[3]
-    if optional_param == 'tun_phi_2':
-      phi_type = 'tun_phi_2'
-      phi_multiplier_value = 2
-    elif optional_param == 'tun_phi_4':
-      phi_type = 'tun_phi_4'
-      phi_multiplier_value = 4
-    else:
-      print("Aviso: O terceiro parâmetro opcional é inválido. Usando o valor padrão 'tun_phi_normal'.")
+  # O diretório de trace agora vem diretamente do argumento
+  trace_directory = sys.argv[1] 
   
   # --- 2. Instanciação dos Calculadores ---
   
-  # Usar um dicionário simplifica o processamento e salvamento
+  # Dicionário de calculadores (lógica de phi_multiplier removida)
   calculators = {
     "jac": JacobsonTimeoutCalculator(),
     "tun_phi": TuningPhiTimeoutCalculator(),
@@ -295,10 +274,9 @@ def main():
   }
   
   # --- 3. Processamento do Arquivo de Trace ---
-  trace_directory = f"./traces_{trace_source}_{day_type}/raw"
   
   # O loop original ia de 0 a 1 (só processava log_0.txt). Mantido.
-  for i in range(0, 1):
+  for i in range(0, 18):
     file_path = os.path.join(trace_directory, f"log_{i}.txt")
     
     if not os.path.exists(file_path):
@@ -326,7 +304,10 @@ def main():
           print(f"Erro inesperado na linha {x}: {e}")
 
   # --- 4. Salvamento dos Resultados ---
-  csv_output_dir = f'csvs/{trace_source}/{day_type}/time_mistake/{phi_type}'
+  
+  # *** ALTERAÇÃO AQUI ***
+  # Caminho de saída agora é baseado no diretório de entrada (trace_directory)
+  csv_output_dir = os.path.join(trace_directory, '..', 'csvs', 'time_mistake')
   os.makedirs(csv_output_dir, exist_ok=True)
   
   column_headers = ['sequence_number', 'time_taken_to_correct_s']

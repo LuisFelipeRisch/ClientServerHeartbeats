@@ -61,7 +61,7 @@ class BaseTimeoutCalculator:
     """Lógica base executada quando um timeout é perdido (miss)."""
     time_mistake_dict = {
       "sequence_number": sequence_number_received,
-      "time_taken_to_correct_s": (server_received_at - timeout_at) / 1_000_000_000
+      "time_taken_to_correct_ms": (server_received_at - timeout_at) / 1_000_000
     }
     self.time_mistakes.append(time_mistake_dict)
 
@@ -310,7 +310,7 @@ def main():
   csv_output_dir = os.path.join(trace_directory, '..', 'csvs', 'time_mistake')
   os.makedirs(csv_output_dir, exist_ok=True)
   
-  column_headers = ['sequence_number', 'time_taken_to_correct_s']
+  column_headers = ['sequence_number', 'time_taken_to_correct_ms']
 
   # Itera sobre o dicionário para salvar cada CSV
   for name, calculator in calculators.items():

@@ -1,34 +1,28 @@
 import subprocess
 import random
 import sys
+import os
 
-if len(sys.argv) < 3 or len(sys.argv) > 4:
-  print("Uso: python seu_script.py <week_day|weekend> <ufpr_ufsm|ufpr_sydney> [tun_phi_2|tun_phi_4]")
+# 1. Verificação de argumento: Agora espera exatamente 2 
+# (o nome do script e o path da pasta)
+if len(sys.argv) != 2:
+  print("Uso: python seu_script.py <path_da_pasta>")
   sys.exit(1)
 
-day_type = sys.argv[1]
-if day_type not in ['week_day', 'weekend']:
-  print("Erro: O primeiro parâmetro deve ser 'week_day' ou 'weekend'.")
-  sys.exit(1)
+# 2. O único argumento é o path da pasta
+folder_path = sys.argv[1]
 
-trace_source = sys.argv[2]
-if trace_source not in ['ufpr_ufsm', 'ufpr_sydney']:
-  print("Erro: O segundo parâmetro deve ser 'ufpr_ufsm' ou 'ufpr_sydney'.")
+# Verificação se o path é um diretório válido
+if not os.path.isdir(folder_path):
+  print(f"Erro: O path '{folder_path}' não é um diretório válido.")
   sys.exit(1)
-
-phi_type = ''
-if len(sys.argv) == 4:
-  optional_param = sys.argv[3]
-  if optional_param not in ['tun_phi_2', 'tun_phi_4']:
-    print("Aviso: O segundo parâmetro opcional é inválido. Usando o valor padrão 'tun_phi_normal'.")
-  else:
-    phi_type = optional_param
 
 script_to_call = f'time_detection.py'
 
 num_iterations = 30
 
 print(f"Starting loop with {num_iterations} iterations...")
+print(f"Target folder path: {folder_path}")
 
 for i in range(num_iterations):
   random_int = random.randint(1, 863999)
@@ -37,10 +31,13 @@ for i in range(num_iterations):
   print(f"Generated random integer: {random_int}")
   
   try:
-    params = [sys.executable, script_to_call, str(random_int), day_type, trace_source]
-    if phi_type != '': 
-      params.append(phi_type)
-      
+    params = [
+      sys.executable, 
+      script_to_call, 
+      str(random_int),
+      folder_path, 
+    ]
+
     result = subprocess.run(
       params,
       check=True,

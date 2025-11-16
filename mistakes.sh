@@ -2,15 +2,12 @@
 
 # --- 1. Defina sua lista de CAMINHOS RELATIVOS aqui ---
 LISTA_DE_CAMINHOS=(
-    "traces_toquio_uk_week_day/raw"
-    "traces_toquio_usa_week_day/raw"
-    "traces_ufpr_sydney_week_day/raw" 
-    "traces_ufpr_ufsm_week_day/raw"
-    "traces_ufpr_ufsm_weekend/raw"
-    "traces_uk_toquio_week_day/raw"
-    "traces_uk_usa_week_day/raw"
-    "traces_usa_toquio_week_day/raw"
-    "traces_usa_uk_week_day/raw"
+    "traces/traces_toquio_uk/raw"
+    "traces/traces_toquio_usa/raw"
+    "traces/traces_uk_toquio/raw" 
+    "traces/traces_uk_usa/raw"
+    "traces/traces_usa_toquio/raw"
+    "traces/traces_usa_uk/raw"
 )
 
 # 2. Defina o nome do seu script Python

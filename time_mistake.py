@@ -61,7 +61,7 @@ class BaseTimeoutCalculator:
     """Lógica base executada quando um timeout é perdido (miss)."""
     time_mistake_dict = {
       "sequence_number": sequence_number_received,
-      "time_taken_to_correct_ms": (server_received_at - timeout_at) / 1_000_000
+      "time_taken_to_correct_ms": (server_received_at - int(timeout_at)) / 1_000_000
     }
     self.time_mistakes.append(time_mistake_dict)
 
